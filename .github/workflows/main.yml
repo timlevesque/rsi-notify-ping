@@ -1,0 +1,36 @@
+name: Check RSI Alerts
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  # Allow manual triggering for testing
+  workflow_dispatch:
+
+jobs:
+  check-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check RSI Alerts
+        run: |
+          echo "🔄 Checking RSI alerts..."
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
+            "${{ secrets.SUPABASE_FUNCTION_URL }}")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n -1)
+          
+          echo "📊 Response: $body"
+          echo "🔢 HTTP Code: $http_code"
+          
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Alert check completed successfully"
+          else
+            echo "❌ Alert check failed with code $http_code"
+            exit 1
+          fi
+
+      - name: Log Results
+        if: always()
+        run: |
+          echo "⏰ Alert check completed at $(date)"
